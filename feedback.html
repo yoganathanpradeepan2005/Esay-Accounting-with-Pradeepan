@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Feedback</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,sans-serif;
+}
+
+body{
+    background:#111;
+    color:#fff;
+}
+
+.container{
+    width:90%;
+    max-width:700px;
+    margin:40px auto;
+}
+
+h1{
+    text-align:center;
+    margin-bottom:20px;
+    color:#00c6ff;
+}
+
+form{
+    background:#222;
+    padding:20px;
+    border-radius:10px;
+}
+
+input,textarea{
+    width:100%;
+    padding:12px;
+    margin:10px 0;
+    border:none;
+    border-radius:6px;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    background:#00c6ff;
+    color:white;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    font-size:18px;
+}
+
+button:hover{
+    background:#0099cc;
+}
+
+.feedback{
+    background:#222;
+    margin-top:20px;
+    padding:15px;
+    border-radius:10px;
+}
+
+.feedback h3{
+    color:#00c6ff;
+}
+
+.feedback p{
+    margin-top:8px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Student Feedback</h1>
+
+<form id="feedbackForm">
+
+<input type="text" id="name" placeholder="Your Name" required>
+
+<textarea id="message" rows="5" placeholder="Write your feedback..." required></textarea>
+
+<button type="submit">Submit Feedback</button>
+
+</form>
+
+<div id="feedbackList"></div>
+
+</div>
+
+<script>
+
+let feedbacks = JSON.parse(localStorage.getItem("feedbacks")) || [];
+
+displayFeedback();
+
+document.getElementById("feedbackForm").addEventListener("submit",function(e){
+
+e.preventDefault();
+
+let name=document.getElementById("name").value;
+let message=document.getElementById("message").value;
+
+feedbacks.unshift({
+name:name,
+message:message
+});
+
+localStorage.setItem("feedbacks",JSON.stringify(feedbacks));
+
+this.reset();
+
+displayFeedback();
+
+});
+
+function displayFeedback(){
+
+let output="";
+
+feedbacks.forEach(function(item){
+
+output+=`
+<div class="feedback">
+<h3>${item.name}</h3>
+⭐⭐⭐⭐⭐
+<p>${item.message}</p>
+</div>
+`;
+
+});
+
+document.getElementById("feedbackList").innerHTML=output;
+
+}
+
+</script>
+
+</body>
+</html>

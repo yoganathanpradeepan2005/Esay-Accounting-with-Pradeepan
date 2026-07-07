@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ledger — Accounting Q&A</title>
+<style>
+  :root{
+    --paper: #F5F5F3;
+    --paper-line: #C9C9C5;
+    --ink: #111111;
+    --ink-soft: #5A5A57;
+    --ledger-green: #111111;
+    --ledger-green-deep: #000000;
+    --debit-red: #111111;
+    --credit-gold: #111111;
+    --card: #FFFFFF;
+    --mono: 'Courier New', ui-monospace, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: var(--paper);
+    font-family: Georgia, 'Times New Roman', serif;
+    color: var(--ink);
+  }
+
+  body {
+    background-image:
+      repeating-linear-gradient(
+        var(--paper) 0px,
+        var(--paper) 27px,
+        var(--paper-line) 28px
+      );
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px;
+    min-height: 100vh;
+  }
+
+  .ledger {
+    width: 100%;
+    max-width: 760px;
+    background: var(--card);
+    border: 1px solid var(--paper-line);
+    box-shadow: 0 2px 0 var(--paper-line), 0 12px 30px rgba(43,42,37,0.12);
+    display: flex;
+    flex-direction: column;
+    min-height: 88vh;
+    position: relative;
+  }
+
+  .ledger::before {
+    content: "";
+    position: absolute;
+    left: 58px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--debit-red);
+    opacity: 0.35;
+  }
+
+  header {
+    padding: 28px 32px 20px 72px;
+    border-bottom: 2px solid var(--ledger-green);
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ledger-green);
+    margin-bottom: 6px;
+  }
+
+  h1 {
+    margin: 0 0 4px 0;
+    font-size: 28px;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    color: var(--ink);
+  }
+
+  .subtitle {
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+
+  .thread {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 32px 20px 72px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .entry {
+    max-width: 92%;
+  }
+
+  .entry .tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .entry.user {
+    align-self: flex-end;
+    text-align: right;
+  }
+
+  .entry.user .tag { color: var(--credit-gold); justify-content: flex-end; }
+  .entry.ai .tag { color: var(--ledger-green); }
+
+  .bubble {
+    display: inline-block;
+    text-align: left;
+    padding: 12px 16px;
+    line-height: 1.55;
+    font-size: 15px;
+    border: 1px solid var(--paper-line);
+    background: #FAFAF9;
+    white-space: pre-wrap;
+  }
+
+  .entry.user .bubble {
+    background: #EDEDEB;
+    border-color: #C9C9C5;
+  }
+
+  .entry.ai .bubble {
+    background: #FFFFFF;
+    border: 1px solid #111111;
+  }
+
+  .entry.ai .bubble strong { color: var(--ledger-green-deep); }
+
+  .balance-mark {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-soft);
+    margin-top: 4px;
+  }
+
+  .thinking {
+    align-self: flex-start;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-soft);
+    padding-left: 4px;
+  }
+
+  .thinking .dots::after {
+    content: '';
+    animation: dots 1.2s steps(4, end) infinite;
+  }
+
+  @keyframes dots {
+    0% { content: ''; }
+    25% { content: '.'; }
+    50% { content: '..'; }
+    75% { content: '...'; }
+    100% { content: ''; }
+  }
+
+  form {
+    display: flex;
+    gap: 10px;
+    padding: 18px 32px 22px 72px;
+    border-top: 2px solid var(--ledger-green);
+    background: var(--card);
+  }
+
+  textarea {
+    flex: 1;
+    resize: none;
+    font-family: Georgia, serif;
+    font-size: 14.5px;
+    padding: 10px 12px;
+    border: 1px solid var(--paper-line);
+    background: #FAFAF9;
+    color: var(--ink);
+    min-height: 46px;
+    max-height: 140px;
+    line-height: 1.4;
+  }
+
+  textarea:focus {
+    outline: none;
+    border-color: var(--ledger-green);
+  }
+
+  button {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: var(--ledger-green);
+    color: var(--paper);
+    border: none;
+    padding: 0 22px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  button:hover:not(:disabled) { background: var(--ledger-green-deep); }
+  button:disabled { opacity: 0.5; cursor: default; }
+
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-soft);
+    padding: 40px 32px 40px 72px;
+    text-align: center;
+    gap: 14px;
+  }
+
+  .empty-state .big-mark {
+    font-family: var(--mono);
+    font-size: 42px;
+    color: var(--ledger-green);
+    opacity: 0.75;
+  }
+
+  .empty-state p {
+    max-width: 380px;
+    font-size: 14px;
+    font-style: italic;
+    margin: 0;
+  }
+
+  .suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 6px;
+  }
+
+  .chip {
+    font-family: var(--mono);
+    font-size: 11px;
+    border: 1px solid var(--paper-line);
+    background: #FAFAF9;
+    padding: 6px 10px;
+    cursor: pointer;
+    color: var(--ink-soft);
+  }
+
+  .chip:hover {
+    border-color: var(--ledger-green);
+    color: var(--ledger-green-deep);
+  }
+
+  @media (max-width: 560px) {
+    header, .thread, form, .empty-state { padding-left: 24px; }
+    .ledger::before { left: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="ledger">
+  <header>
+    <div class="eyebrow">Debit &nbsp;·&nbsp; Credit &nbsp;·&nbsp; Clarity</div>
+    <h1>The Ledger Desk</h1>
+    <div class="subtitle">Ask a bookkeeping or accounting question, get it worked through.</div>
+  </header>
+
+  <div class="thread" id="thread">
+    <div class="empty-state" id="emptyState">
+      <div class="big-mark">T</div>
+      <p>No entries posted yet. Ask about journal entries, financial statements, depreciation, ratios, or anything else in the books.</p>
+      <div class="suggestions">
+        <div class="chip" data-q="How do I record a journal entry for a $2,000 cash sale?">Journal entry for a cash sale</div>
+        <div class="chip" data-q="What's the difference between accrual and cash basis accounting?">Accrual vs. cash basis</div>
+        <div class="chip" data-q="How do I calculate straight-line depreciation?">Straight-line depreciation</div>
+        <div class="chip" data-q="What does a debit vs a credit mean for each account type?">Debits vs. credits, plainly</div>
+      </div>
+    </div>
+  </div>
+
+  <form id="form">
+    <textarea id="input" placeholder="e.g. How do I record accrued payroll at month end?" rows="1"></textarea>
+    <button type="submit" id="sendBtn">Post</button>
+  </form>
+</div>
+
+<script>
+  const thread = document.getElementById('thread');
+  const emptyState = document.getElementById('emptyState');
+  const form = document.getElementById('form');
+  const input = document.getElementById('input');
+  const sendBtn = document.getElementById('sendBtn');
+
+  let history = [];
+  let entryCount = 0;
+
+  const SYSTEM_PROMPT = `You are a precise, friendly accounting tutor called "The Ledger Desk". Answer accounting and bookkeeping questions clearly:
+- Use plain language first, then show the mechanics (journal entries, formulas, T-accounts) when relevant.
+- Format journal entries as simple text tables with Account / Debit / Credit.
+- Keep answers focused and skimmable; use short paragraphs or bullet points.
+- If a question is ambiguous, state a reasonable assumption and answer anyway.
+- If asked something outside accounting/finance/bookkeeping, gently redirect back to the ledger's business, but still be helpful.`;
+
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+  });
+
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      input.value = chip.dataset.q;
+      form.dispatchEvent(new Event('submit'));
+    });
+  });
+
+  function addEntry(role, text) {
+    if (emptyState) emptyState.remove();
+    entryCount++;
+    const div = document.createElement('div');
+    div.className = 'entry ' + (role === 'user' ? 'user' : 'ai');
+    const tagLabel = role === 'user' ? 'Inquiry' : 'Response';
+    const num = String(entryCount).padStart(3, '0');
+    div.innerHTML = `
+      <div class="tag">${role === 'user' ? '' : '&#9670;'} ${tagLabel} No. ${num}</div>
+      <div class="bubble">${escapeHtml(text)}</div>
+    `;
+    thread.appendChild(div);
+    thread.scrollTop = thread.scrollHeight;
+    return div;
+  }
+
+  function escapeHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  function showThinking() {
+    const div = document.createElement('div');
+    div.className = 'thinking';
+    div.id = 'thinkingIndicator';
+    div.innerHTML = 'Balancing the books<span class="dots"></span>';
+    thread.appendChild(div);
+    thread.scrollTop = thread.scrollHeight;
+  }
+
+  function hideThinking() {
+    const el = document.getElementById('thinkingIndicator');
+    if (el) el.remove();
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const question = input.value.trim();
+    if (!question) return;
+
+    addEntry('user', question);
+    history.push({ role: 'user', content: question });
+
+    input.value = '';
+    input.style.height = 'auto';
+    input.disabled = true;
+    sendBtn.disabled = true;
+    showThinking();
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1000,
+          system: SYSTEM_PROMPT,
+          messages: history
+        })
+      });
+
+      const data = await response.json();
+      hideThinking();
+
+      let answer = '';
+      if (data && data.content) {
+        answer = data.content
+          .map(block => block.type === 'text' ? block.text : '')
+          .filter(Boolean)
+          .join('\n');
+      }
+
+      if (!answer) {
+        answer = "The books didn't balance on that one — could you rephrase the question?";
+      }
+
+      addEntry('ai', answer);
+      history.push({ role: 'assistant', content: answer });
+
+    } catch (err) {
+      hideThinking();
+      addEntry('ai', 'There was an error reaching the ledger service. Please try again.');
+      console.error('Claude API error:', err);
+    } finally {
+      input.disabled = false;
+      sendBtn.disabled = false;
+      input.focus();
+    }
+  });
+
+  form.addEventListener('keydown', (e) => {});
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      form.dispatchEvent(new Event('submit'));
+    }
+  });
+</script>
+
+</body>
+</html>
